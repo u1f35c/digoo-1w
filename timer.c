@@ -68,7 +68,7 @@ unsigned long micros(void)
 	m = timer1_overflow_count;
 	t = TCNT1;
 
-	if ((TIFR & _BV(TOV1)) & (t < 255))
+	if ((TIFR & _BV(TOV1)) && (t < 255))
 		m++;
 
 	SREG = oldSREG;
