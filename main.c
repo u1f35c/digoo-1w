@@ -19,6 +19,7 @@
 #include <avr/eeprom.h>
 #include <avr/interrupt.h>
 #include <avr/io.h>
+#include <avr/sleep.h>
 #include <avr/wdt.h>
 #include <util/delay.h>
 
@@ -27,9 +28,18 @@
 #include "timer.h"
 #include "tx_uart.h"
 
+void idle(void)
+{
+	set_sleep_mode(SLEEP_MODE_IDLE);
+	sleep_mode();
+}
+
 int __attribute__((noreturn)) main(void)
 {
 	unsigned long last_time, cur_time;
+
+	/* We don't need the ADC, so power it down */
+	ACSR |= (1 << ACD);
 
 	timer_init();
 	uart_init();
@@ -43,14 +53,11 @@ int __attribute__((noreturn)) main(void)
 	last_time = 0;
 	while (1) {
 		cur_time = millis();
-		if ((cur_time - last_time) > 2000) {
-			/* Toggle LED */
-			PORTB ^= 1 << PB1;
-			uart_tx('.');
+		if ((cur_time - last_time) > 60000) {
+			uart_puts("Another minute\r\n");
 			last_time = cur_time;
 		}
-		if ((cur_time % 60000) == 0) {
-			uart_puts("Another minute\r\n");
-		}
+		/* Idle the CPU; the timer interrupt and/or pin change will wake us */
+		idle();
 	}
 }
