@@ -21,12 +21,81 @@
 #include <avr/io.h>
 #include <avr/sleep.h>
 #include <avr/wdt.h>
+#include <stdio.h>
 #include <util/delay.h>
 
 #include <avr/pgmspace.h>
 
 #include "timer.h"
 #include "tx_uart.h"
+#include "w1.h"
+
+char serial[17];
+
+inline char hexdigit(unsigned int i)
+{
+	return (i < 10) ? ('0' + i) : ('A' - 10 + i);
+}
+
+/* Look for a 1-Wire device and use its ROMID to set the serial ID */
+static void read_serial(void)
+{
+	uint8_t buf[8];
+	uint8_t i;
+
+	if (!w1_reset(false)) {
+		serial[0] = 0;
+		return;
+	}
+
+	w1_write(0x33);		/* READ ROM */
+	w1_read(buf, 8);
+
+	for (i = 0; i < 8; i++) {
+		serial[i * 2] = hexdigit(buf[i] >> 4);
+		serial[i * 2 + 1] = hexdigit(buf[i] & 0xF);
+	}
+	serial[16] = 0;
+}
+
+static void read_temperature(void)
+{
+	int i;
+	uint8_t buf[9];
+	char tmp[5];
+
+	if (!w1_reset(false)) {
+		return;
+	}
+
+	w1_write(0xCC);		/* SKIP ROM */
+	w1_write(0x44);		/* Convert T */
+
+	while (!w1_read_bit())
+		;
+
+	if (!w1_reset(false)) {
+		return;
+	}
+	w1_write(0xCC);		/* SKIP ROM */
+	w1_write(0xBE);		/* Read Scratchpad */
+
+	for (i = 0; i < 9; i++) {
+		buf[i] = w1_read_byte();
+	}
+
+	uart_puts("ID=");
+	uart_puts(serial);
+	uart_puts(" T=");
+	if (buf[1] & 0x80)
+		uart_tx('-');
+	sprintf(tmp, "%d", (buf[1] & 0x7) << 4 | (buf[0] >> 4));
+	uart_puts(tmp);
+	i = sprintf(tmp, "%04d", 625 * (buf[0] & 0xF));
+	uart_tx('.');
+	uart_puts(tmp);
+	uart_puts("\r\n");
+}
 
 void idle(void)
 {
@@ -43,18 +112,22 @@ int __attribute__((noreturn)) main(void)
 
 	timer_init();
 	uart_init();
+	w1_init();
 
 	DDRB |= 1 << PB1;	/* PB1 output for LED */
 
 	sei(); /* We're ready to go; enable interrupts */
 
-	uart_puts("Hello World!\r\n");
+	read_serial();
+	uart_puts("N=digoo-w1 V=0.1 ID=");
+	uart_puts(serial);
+	uart_puts("\r\n");
 
 	last_time = 0;
 	while (1) {
 		cur_time = millis();
 		if ((cur_time - last_time) > 60000) {
-			uart_puts("Another minute\r\n");
+			read_temperature();
 			last_time = cur_time;
 		}
 		/* Idle the CPU; the timer interrupt and/or pin change will wake us */
