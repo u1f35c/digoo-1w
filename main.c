@@ -26,6 +26,7 @@
 
 #include <avr/pgmspace.h>
 
+#include "r433.h"
 #include "timer.h"
 #include "tx_uart.h"
 #include "w1.h"
@@ -112,6 +113,7 @@ int __attribute__((noreturn)) main(void)
 
 	timer_init();
 	uart_init();
+	r433_init();
 	w1_init();
 
 	DDRB |= 1 << PB1;	/* PB1 output for LED */

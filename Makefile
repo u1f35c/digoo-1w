@@ -3,7 +3,7 @@ F_CPU = 16500000
 
 AVRCC = avr-gcc -Wall -Os -DF_CPU=$(F_CPU) $(CFLAGS) -mmcu=$(DEVICE)
 
-OBJECTS = main.o timer.o tx_uart.o w1.o
+OBJECTS = main.o r433.o timer.o tx_uart.o w1.o
 
 all: main.hex
 
