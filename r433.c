@@ -83,21 +83,24 @@ static bool decode_digoo(unsigned int changeCount)
 
 	/* If we get this far we have valid Digoo data in 'code' */
 	/* IIIIIIII B0CCTTTT TTTTTTTT HHHHHHHH */
-	sprintf(buf, "ID=%u CH=%u BAT=%s",
-			(unsigned char) (code >> 24),
-			(unsigned char) ((code >> 20) & 0x3) + 1,
-			((code >> 20) & 8) ? "OK" : "LOW");
-	uart_puts(buf);
-	sprintf(buf, " T=%d.%d",
-			(int) ((code >> 8) & 0xFFF) / 10,
-			(int) ((code >> 8) & 0xFFF) % 10);
-	uart_puts(buf);
-	/* Humidity is apparently optional on some sensors */
-	if (code & 0xFF) {
-		sprintf(buf, " H=%u", (unsigned char) (code & 0xFF));
+	if (uart_lock()) {
+		sprintf(buf, "ID=%u CH=%u BAT=%s",
+				(unsigned char) (code >> 24),
+				(unsigned char) ((code >> 20) & 0x3) + 1,
+				((code >> 20) & 8) ? "OK" : "LOW");
 		uart_puts(buf);
+		sprintf(buf, " T=%d.%d",
+				(int) ((code >> 12) & 0xFFF) / 10,
+				(int) ((code >> 12) & 0xFFF) % 10);
+		uart_puts(buf);
+		/* Humidity is apparently optional on some sensors */
+		if (code & 0xFF) {
+			sprintf(buf, " H=%u", (unsigned char) (code & 0xFF));
+			uart_puts(buf);
+		}
+		uart_puts("\r\n");
+		uart_unlock();
 	}
-	uart_puts("\r\n");
 
 	return true;
 }

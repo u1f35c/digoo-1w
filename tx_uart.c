@@ -21,6 +21,8 @@
  */
 #include <avr/io.h>
 #include <avr/interrupt.h>
+#include <stdbool.h>
+#include <util/delay.h>
 
 #include "tx_uart.h"
 
@@ -29,6 +31,8 @@
 #else
 #error Must define F_CPU
 #endif
+
+static bool uart_locked = false;
 
 void uart_tx(char c)
 {
@@ -66,6 +70,32 @@ void uart_puts(char *s)
 {
 	while (*s)
 		uart_tx(*(s++));
+}
+
+bool uart_lock(void)
+{
+	uint8_t oldSREG = SREG;
+	bool gotlock;
+
+	cli();
+	if (uart_locked) {
+		gotlock = false;
+	} else {
+		gotlock = true;
+		uart_locked = true;
+	}
+	SREG = oldSREG;
+
+	return gotlock;
+}
+
+void uart_unlock(void)
+{
+	uint8_t oldSREG = SREG;
+
+	cli();
+	uart_locked = false;
+	SREG = oldSREG;
 }
 
 void uart_init(void)

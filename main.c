@@ -85,17 +85,20 @@ static void read_temperature(void)
 		buf[i] = w1_read_byte();
 	}
 
-	uart_puts("ID=");
-	uart_puts(serial);
-	uart_puts(" T=");
-	if (buf[1] & 0x80)
-		uart_tx('-');
-	sprintf(tmp, "%d", (buf[1] & 0x7) << 4 | (buf[0] >> 4));
-	uart_puts(tmp);
-	i = sprintf(tmp, "%04d", 625 * (buf[0] & 0xF));
-	uart_tx('.');
-	uart_puts(tmp);
-	uart_puts("\r\n");
+	if (uart_lock()) {
+		uart_puts("ID=");
+		uart_puts(serial);
+		uart_puts(" T=");
+		if (buf[1] & 0x80)
+			uart_tx('-');
+		sprintf(tmp, "%d", (buf[1] & 0x7) << 4 | (buf[0] >> 4));
+		uart_puts(tmp);
+		i = sprintf(tmp, "%04d", 625 * (buf[0] & 0xF));
+		uart_tx('.');
+		uart_puts(tmp);
+		uart_puts("\r\n");
+		uart_unlock();
+	}
 }
 
 void idle(void)
@@ -121,9 +124,12 @@ int __attribute__((noreturn)) main(void)
 	sei(); /* We're ready to go; enable interrupts */
 
 	read_serial();
-	uart_puts("N=digoo-w1 V=0.1 ID=");
-	uart_puts(serial);
-	uart_puts("\r\n");
+	if (uart_lock()) {
+		uart_puts("\r\nN=digoo-w1 V=0.1 ID=");
+		uart_puts(serial);
+		uart_puts("\r\n");
+		uart_unlock();
+	}
 
 	last_time = 0;
 	while (1) {
