@@ -22,6 +22,7 @@
 #include <avr/sleep.h>
 #include <avr/wdt.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <util/delay.h>
 
 #include <avr/pgmspace.h>
@@ -64,6 +65,7 @@ static void read_temperature(void)
 	int i;
 	uint8_t buf[9];
 	char tmp[5];
+	int16_t temp;
 
 	if (!w1_reset(false)) {
 		return;
@@ -89,11 +91,10 @@ static void read_temperature(void)
 		uart_puts("ID=");
 		uart_puts(serial);
 		uart_puts(" T=");
-		if (buf[1] & 0x80)
-			uart_tx('-');
-		sprintf(tmp, "%d", (buf[1] & 0x7) << 4 | (buf[0] >> 4));
+		temp = buf[1] << 8 | buf[0];
+		sprintf(tmp, "%d", temp >> 4);
 		uart_puts(tmp);
-		i = sprintf(tmp, "%04d", 625 * (buf[0] & 0xF));
+		i = sprintf(tmp, "%04d", 625 * (abs(temp) & 0xF));
 		uart_tx('.');
 		uart_puts(tmp);
 		uart_puts("\r\n");
