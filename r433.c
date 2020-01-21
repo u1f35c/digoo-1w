@@ -62,7 +62,7 @@ static bool decode_digoo(unsigned int changeCount)
 			return false;
 
 		if (i > 48 && i < 57) {
-			/* 4 bits of 1 (4T) in bits 25->29 */
+			/* 4 bits of 1 (4T) in bits 25->28 */
 			if (diff(timings[i + 1], 4 * T) > delayTolerance)
 				return false;
 		} else {
