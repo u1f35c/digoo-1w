@@ -107,7 +107,7 @@ void idle(void)
 	sleep_mode();
 }
 
-int __attribute__((noreturn)) main(void)
+int __attribute__((OS_main)) main(void)
 {
 	unsigned long last_time, cur_time;
 
