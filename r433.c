@@ -98,6 +98,9 @@ static bool decode_digoo(unsigned int changeCount)
 			sprintf(buf, " H=%u", (unsigned char) (code & 0xFF));
 			uart_puts(buf);
 		}
+		/* Output the raw code to aid debugging */
+		sprintf(buf, " R=%08lX", code);
+		uart_puts(buf);
 		uart_puts("\r\n");
 		uart_unlock();
 	}
