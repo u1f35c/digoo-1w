@@ -47,6 +47,7 @@ static bool decode_digoo(unsigned int changeCount)
 	const unsigned int delayTolerance = T * nReceiveTolerance / 100;
 	char buf[64];
 	int i;
+	int16_t temp;
 
 	/* We need a start gap + 36 bits */
 	if (changeCount < 73)
@@ -89,9 +90,11 @@ static bool decode_digoo(unsigned int changeCount)
 				(unsigned char) ((code >> 20) & 0x3) + 1,
 				((code >> 20) & 8) ? "OK" : "LOW");
 		uart_puts(buf);
+		temp = (code >> 8) & 0xFFF;
+		temp |= (temp & 0x800) ? 0xF000 : 0;
 		sprintf(buf, " T=%d.%d",
-				(int) ((code >> 12) & 0xFFF) / 10,
-				(int) ((code >> 12) & 0xFFF) % 10);
+				temp / 10,
+				abs(temp % 10));
 		uart_puts(buf);
 		/* Humidity is apparently optional on some sensors */
 		if (code & 0xFF) {
